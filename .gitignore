@@ -1,0 +1,9 @@
+screenshots
+test-custom-dir
+test-images-results
+test-images.html
+node_modules
+homepage.png
+
+# Mac
+.DS_Store
