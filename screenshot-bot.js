@@ -14,10 +14,23 @@ function generateTimestampedOutputDir(baseDir = './screenshots') {
 }
 
 // Parse command line arguments
+// Viewport presets for different device sizes
+const VIEWPORT_PRESETS = {
+  'desktop': { width: 1920, height: 1080 },
+  'desktop-hd': { width: 1366, height: 768 },
+  'laptop': { width: 1280, height: 800 },
+  'tablet': { width: 768, height: 1024 },
+  'tablet-landscape': { width: 1024, height: 768 },
+  'mobile': { width: 375, height: 812 }, // iPhone X
+  'mobile-large': { width: 414, height: 896 }, // iPhone XR
+  'mobile-small': { width: 320, height: 568 }  // iPhone SE
+};
+
 function parseArgs() {
   const args = process.argv.slice(2);
   if (args.length === 0) {
-    console.error('Usage: node screenshot-bot.js <url> [--output <directory>] [--pages <number>] [--crawl] [--headless]');
+    console.error('Usage: node screenshot-bot.js <url> [--output <directory>] [--pages <number>] [--crawl] [--headless] [--viewport <preset>]');
+    console.error('Available viewport presets: ' + Object.keys(VIEWPORT_PRESETS).join(', '));
     process.exit(1);
   }
 
@@ -27,6 +40,7 @@ function parseArgs() {
   let crawlMode = false;
   let headless = true; // Changed to true by default (production mode)
   let customOutputDir = false;
+  let viewportPreset = 'desktop'; // Default viewport
 
   for (let i = 1; i < args.length; i++) {
     switch (args[i]) {
@@ -61,10 +75,28 @@ function parseArgs() {
         headless = false; // Debug mode - keep browser visible
         console.log('🔍 Debug mode: Browser will be visible for troubleshooting');
         break;
+      case '--viewport':
+        if (args[i + 1] && VIEWPORT_PRESETS[args[i + 1]]) {
+          viewportPreset = args[i + 1];
+          i++;
+        } else {
+          console.error(`❌ Invalid viewport preset. Available presets: ${Object.keys(VIEWPORT_PRESETS).join(', ')}`);
+          process.exit(1);
+        }
+        break;
     }
   }
 
-  return { url, outputDir, pagesToCapture, crawlMode, headless, customOutputDir };
+  return { 
+    url, 
+    outputDir, 
+    pagesToCapture, 
+    crawlMode, 
+    headless, 
+    customOutputDir, 
+    viewport: VIEWPORT_PRESETS[viewportPreset],
+    viewportName: viewportPreset
+  };
 }
 
 // Ensure output directory exists
@@ -415,9 +447,10 @@ class WebSpider {
         await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 50000 });
       }
 
-      // Generate filename
-      const pageName = this.generatePageName(url);
-      const filename = `${pageName}.png`;
+      // Generate filename with viewport, timestamp and page number
+      const pageNum = pageNumber ? `_${pageNumber}` : '';
+      const viewportSuffix = `_${args.viewportName}`;
+      const filename = `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}${viewportSuffix}${pageNum}.png`;
 
       // Take screenshot
       await takeScreenshot(this.page, filename, this.outputDir);
@@ -461,7 +494,7 @@ class WebSpider {
 }
 
 async function main() {
-  const { url, outputDir: requestedOutputDir, pagesToCapture, crawlMode, headless, customOutputDir } = parseArgs();
+  const { url, outputDir: requestedOutputDir, pagesToCapture, crawlMode, headless, customOutputDir, viewport } = parseArgs();
 
   // Determine final output directory
   const finalOutputDir = customOutputDir
@@ -477,6 +510,7 @@ async function main() {
     console.log(`Pages to capture: ${pagesToCapture}`);
     console.log(`Mode: ${crawlMode ? '🕷️ Full crawler mode' : '🎯 Smart discovery mode'}`);
     console.log(`Browser: ${headless ? '👻 Headless' : '👁️ Visible'}`);
+    console.log(`Viewport: ${viewport.name} (${viewport.width}x${viewport.height})`);
 
     // Ensure output directory exists
     await ensureOutputDir(finalOutputDir);
@@ -486,9 +520,14 @@ async function main() {
     browser = await chromium.launch({ headless }); // Use configured headless mode
     const context = await browser.newContext();
     const page = await context.newPage();
-
-    // Set reasonable viewport
-    await page.setViewportSize({ width: 1280, height: 1024 });
+  
+    // Set viewport size
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height
+    });
+  
+    console.log(`🖥️  Using viewport: ${viewport.name} (${viewport.width}x${viewport.height})`);
 
     if (crawlMode) {
       // FULL CRAWLER MODE - Capture ALL pages

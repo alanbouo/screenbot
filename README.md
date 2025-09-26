@@ -1,265 +1,266 @@
-# Screenshot Bot - Outil de Capture d'Écran de Site Web
+# Screenshot Bot - Website Screenshot Automation Tool
 
-Un script Node.js utilisant Playwright pour automatiser la prise de captures d'écran de sites web. Parfait pour l'analyse UI/UX et le développement web.
+A Node.js script that leverages Playwright to automate full-page website screenshots. Ideal for UI/UX analysis, frontend regression tracking, and design documentation.
 
-## 🚀 Fonctionnalités
+## 🚀 Features
 
-- **Navigation automatique** : Capture la page d'accueil et découvre automatiquement les pages clés (À propos, Contact, Produits)
-- **Capture intelligente** : Prise de captures d'écran pleine page avec détection intelligente des pages importantes
-- **Configuration flexible** : Arguments en ligne de commande pour personnaliser l'exécution
-- **Gestion d'erreurs** : Continue le processus même si certaines pages échouent
-- **Compatibilité multiple** : Fonctionne avec différents sites web
+- **Automatic navigation**: Captures the homepage and discovers key pages (About, Contact, Products)
+- **Smart capture**: Produces full-page screenshots with heuristic detection of important links
+- **Flexible configuration**: Command-line options let you tailor each run
+- **Resilient error handling**: Continues even when individual pages fail
+- **Wide compatibility**: Works across modern websites and frameworks
 
-## 📋 Prérequis
+## 📋 Prerequisites
 
-- Node.js (version 14 ou supérieure)
-- npm ou yarn
+- Node.js (version 14 or newer)
+- npm or yarn
 
 ## 🛠️ Installation
 
-### Installation des dépendances du projet
+### Install project dependencies
 
 ```bash
-# Initialiser le projet npm et installer Playwright
+# Initialize the npm project and install Playwright
 npm init -y && npm install playwright
 
-# Installer les navigateurs Playwright
+# Install the Playwright browsers
 npx playwright install chromium
 ```
 
-### Fichiers créés
-- `package.json` - Configuration du projet Node.js
-- `screenshot-bot.js` - Script principal
-- `node_modules/` - Dépendances installées
+### Files created
+- `package.json` – Node.js project configuration
+- `screenshot-bot.js` – Main script
+- `node_modules/` – Installed dependencies
 
-## 📖 Utilisation
+## 📖 Usage
 
-### Commandes de base
+### Basic commands
 
 ```bash
-# Utilisation basique avec mode Discovery intelligent (5 pages max)
-node screenshot-bot.js https://monsite.com
-# → Crée : ./screenshots/capture_2025-09-04_09-03-50/
+# Default smart discovery mode (up to 5 pages)
+node screenshot-bot.js https://mysite.com
+# → Creates: ./screenshots/capture_2025-09-04_09-03-50/
 
-# Mode Crawler complet - explore TOUTES les pages du site
-node screenshot-bot.js https://monsite.com --crawl --pages 20
-# → Capture toutes les pages trouvées jusqu'à 20 pages
+# Full crawler mode — explores ALL pages it finds
+node screenshot-bot.js https://mysite.com --crawl --pages 20
+# → Captures up to 20 discovered pages
 
-# Avec répertoire de sortie personnalisé (ignore les timestamps automatiques)
-node screenshot-bot.js https://monsite.com --output ./mes-captures
+# Custom output directory (skips automatic timestamps)
+node screenshot-bot.js https://mysite.com --output ./my-shots
 
-# Mode debug avec navigateur visible pour le développement
-node screenshot-bot.js https://monsite.com --debug --pages 3
-# → Navigateur visible pour le débogage
+# Debug mode with a visible browser window
+node screenshot-bot.js https://mysite.com --debug --pages 3
+# → Browser stays visible for troubleshooting
 
-# Limiter le nombre de pages à capturer (avec répertoire automatique)
-node screenshot-bot.js https://monsite.com --pages 3
+# Limit the number of captured pages (still uses timestamped folders)
+node screenshot-bot.js https://mysite.com --pages 3
 
-# Combinaison des options avec répertoire personnalisé
-node screenshot-bot.js https://monsite.com --output ./captures --pages 10
+# Combine options with a custom directory
+node screenshot-bot.js https://mysite.com --output ./captures --pages 10
 ```
 
-### Arguments disponibles
+### Available arguments
 
-| Argument | Description | Obligatoire | Défaut | Comportement |
-|----------|-------------|-------------|--------|--------------|
-| `<url>` | URL du site web à analyser | Oui | - | - |
-| `--crawl` | Mode crawler complet : explore TOUTES les pages du site | Non | false | Active le web crawler |
-| `--output <répertoire>` | Dossier pour sauvegarder les captures | Non | `./screenshots` | Désactive les timestamps si spécifié |
-| `--pages <nombre>` | Nombre de pages à capturer | Non | `5` | Limite du nombre de captures |
-| `--debug` | Mode debug : navigateur visible | Non | false | Navigation visible pour debugging |
-| `--headless` | Mode headless : navigateur caché | Non | true | Navigation en arrière-plan |
+| Argument | Description | Required | Default | Notes |
+|----------|-------------|----------|---------|-------|
+| `<url>` | Website URL to analyze | Yes | - | - |
+| `--crawl` | Full crawler mode: explores every internal page | No | false | Enables the web crawler |
+| `--output <directory>` | Directory where screenshots are saved | No | `./screenshots` | Disables timestamps when provided |
+| `--pages <number>` | How many pages to capture | No | `5` | Use `-1` for unlimited |
+| `--debug` | Debug mode: visible browser window | No | false | Overrides `--headless` |
+| `--headless` | Headless mode: hidden browser | No | true | Recommended in production |
+| `--viewport <preset>` | Viewport preset to apply | No | `desktop` | See script for available presets |
 
-### Comportement des répertoires automatiques
+### Automatic directory behavior
 
-Le script crée automatiquement des répertoires timestampés à chaque exécution :
+The script creates timestamped folders on every run:
 
 ```text
 ./screenshots/
-├── capture_2025-09-04_09-03-50/  ← Exécution 1
+├── capture_2025-09-04_09-03-50/  ← Run #1
 │   ├── homepage.png
 │   ├── about.png
 │   └── contact.png
-└── capture_2025-09-04_12-15-30/  ← Exécution 2
+└── capture_2025-09-04_12-15-30/  ← Run #2
     ├── homepage.png
     ├── services.png
     └── products.png
 ```
 
-**Avantages :**
-- ✅ Chaque exécution a son propre dossier
-- ✅ Historique préservé automatiquement
-- ✅ Timestamp pour différencier les captures
-- ✅ Pas de risque d'écrasement accidentel
+**Benefits:**
+- ✅ Each run is isolated in its own folder
+- ✅ Automatic history retention
+- ✅ Timestamp makes captures easy to distinguish
+- ✅ No risk of accidental overwrite
 
-**Format du timestamp :** `capture_AAAA-MM-JJ_HH-MM-SS`
+**Timestamp format:** `capture_YYYY-MM-DD_HH-MM-SS`
 
-### Modes de fonctionnement
+### Operating modes
 
-#### 🎯 Mode Discovery Intelligent (par défaut)
-- Capture la page d'accueil puis cherche les pages importantes (À propos, Contact, Produits)
-- Analyse automatique des liens pour trouver les pages les plus pertinentes
-- Idéal pour des analyses rapides et ciblées
-- Mode efficace pour la plupart des utilisations
+#### 🎯 Smart Discovery Mode (default)
+- Captures the homepage, then hunts for important pages (About, Contact, Products)
+- Analyzes on-page links to find the most relevant destinations
+- Ideal for quick, targeted analysis
+- Efficient for most workflows
 
-#### 🕷️ Mode Crawler Complet (`--crawl`)
-- Explore récursivement TOUTES les pages trouvées sur le site
-- Suit tous les liens internes comme un véritable spider/robot
-- Idéal pour une couverture complète du site
-- Peut générer beaucoup de trafic et prendre du temps
+#### 🕷️ Full Crawler Mode (`--crawl`)
+- Recursively explores every internal link it encounters
+- Behaves like a lightweight spider/robot
+- Ideal for comprehensive coverage
+- Can generate significant traffic and requires more time
 
-**Exemples d'utilisation :**
+**Example usage:**
 
 ```bash
-# Mode Discovery - rapide et intelligent (recommandé) - 5 pages max
-node screenshot-bot.js https://monsite.com --pages 8
+# Smart discovery — fast and focused (recommended) — up to 5 pages
+node screenshot-bot.js https://mysite.com --pages 8
 
-# Mode Crawler - complet mais plus long - jusqu'à 20 pages
-node screenshot-bot.js https://monsite.com --crawl --pages 20
+# Full crawler — thorough but longer — up to 20 pages
+node screenshot-bot.js https://mysite.com --crawl --pages 20
 
-# Pour petits sites - reste efficace
+# Small sites — still efficient
 node screenshot-bot.js https://landing-page.com --pages 3
 ```
 
-#### 💡 Quand utiliser chaque mode :
+#### 💡 When to use each mode
 
-- **Mode Discovery** : Analyse UX d'un site, documentation, tests visuels
-- **Mode Crawler** : Indexation complète, sécurité, génération de contenu IA
+- **Smart Discovery**: UX reviews, documentation, visual regression spot checks
+- **Full Crawler**: Full-site indexing, security audits, AI dataset generation
 
-### Exemples pratiques
+### Practical examples
 
 ```bash
-# Analyse d'un portfolio (mode Discovery)
+# Portfolio analysis (Discovery mode)
 node screenshot-bot.js https://john-doe.dev --pages 8
 
-# Capture d'un e-commerce (mode Crawler pour toutes les pages)
-node screenshot-bot.js https://boutique.fr --crawl --pages 25
+# E-commerce capture (Crawler mode for every page)
+node screenshot-bot.js https://shop.example --crawl --pages 25
 
-# Session de debugging (navigateur visible)
-node screenshot-bot.js https://mon-site.fr --debug --pages 3
+# Debugging session (visible browser)
+node screenshot-bot.js https://my-site.com --debug --pages 3
 
-# Génération de données IA (mode Crawler personnalisé)
-node screenshot-bot.js https://blog.fr --crawl --pages 15 --output ./ai-data
+# AI data generation (custom crawler output)
+node screenshot-bot.js https://blog.example --crawl --pages 15 --output ./ai-data
 ```
 
-## 📁 Structure des fichiers générés
+## 📁 Generated file structure
 
 ```
-mes-captures/
-├── homepage.png          # Page d'accueil
-├── about.png            # Page "À propos"
-├── contact.png          # Page de contact
-├── produits.png         # Page produits (si trouvée)
-└── page-4.png          # Pages supplémentaires
+my-captures/
+├── homepage.png          # Homepage
+├── about.png             # About page
+├── contact.png           # Contact page
+├── products.png          # Products page (if discovered)
+└── page-4.png            # Additional pages
 ```
 
-## ⚙️ Comment ça fonctionne
+## ⚙️ How it works
 
-1. **Initialisation** :
-   - Lance un navigateur Chromium (en mode visuel pour le debugging)
-   - Crée le répertoire de sortie si nécessaire
+1. **Initialization**:
+   - Launches a Chromium browser (visible when debugging)
+   - Creates the output directory when needed
 
-2. **Navigation intelligente** :
-   - Accède à la page d'accueil avec gestion d'erreur améliorée
-   - Si timeout dépassé : essaie avec une condition d'attente plus simple et timeout étendu
-   - Permet de gérer les sites lents ou ceux qui se chargent de manière atypique
+2. **Intelligent navigation**:
+   - Visits the homepage with enhanced error handling
+   - On timeout: retries with a simpler wait condition and extended timeout
+   - Handles slow or atypically loading sites
 
-3. **Découverte automatique** :
-   - Analyse les liens de la page
-   - Identifie les pages clés (À propos, Contact, Produits)
-   - Vise les liens internes uniquement
+3. **Automatic discovery**:
+   - Parses links on the current page
+   - Targets key pages (About, Contact, Products)
+   - Restricts itself to internal links only
 
-4. **Capture robuste** :
-   - Navigue vers chaque page découverte avec la même gestion d'erreur
-   - Attend le chargement complet avec `networkidle`
-   - Prend une capture d'écran pleine page
-   - Génère des noms de fichiers descriptifs
+4. **Robust capture**:
+   - Navigates to each discovered page with the same error handling
+   - Waits for `networkidle` before shooting
+   - Captures full-page screenshots
+   - Generates descriptive filenames
 
-5. **Finalisation** :
-   - Ferme proprement le navigateur
-   - Affiche un résumé de l'exécution
+5. **Wrap-up**:
+   - Closes the browser cleanly
+   - Prints a summary of the run
 
-## 🎯 Cas d'usage recommandés
+## 🎯 Recommended use cases
 
-### Pour les développeurs :
-- Tests visuels lors de refactorisation CSS
-- Comparaison de design avant/après
-- Documentation d'interfaces utilisateur
+### For developers
+- Visual testing during CSS refactors
+- Before/after design comparisons
+- Documenting UI states
 
-### Pour les UX designers :
-- Analyse rapide de sites concurrents
-- Capture systématique pour audit UX
-- Documentation de bonnes pratiques
+### For UX designers
+- Rapid competitor analysis
+- Systematic capture for UX audits
+- Cataloging best practices
 
-### Pour les outils AI :
-- Envoi automatique à des outils comme Super Grok pour analyse
-- Génération de données pour intelligence artificielle
-- Automatisation de rapports de qualité
+### For AI workflows
+- Feed captures into tools such as Super Grok for analysis
+- Generate datasets for machine-learning pipelines
+- Automate visual quality reports
 
-## 🔧 Configuration et optimisations
+## 🔧 Configuration and tuning
 
-### Mode headless
-Pour la production, changez cette ligne dans `screenshot-bot.js` :
+### Headless mode
+For production, adjust the following snippet in `screenshot-bot.js`:
 ```javascript
-// Pour le debugging (actuel)
+// Current debugging setup
 browser = await chromium.launch({ headless: false });
 
-// Pour la production
+// Production-ready configuration
 browser = await chromium.launch({ headless: true });
 ```
 
-### Viewport personnalisé
-Modifiez la résolution dans le script :
+### Custom viewport
+Change the resolution directly in the script:
 ```javascript
 await page.setViewportSize({ width: 1280, height: 1024 });
 ```
 
-### Timeouts personnalisables
+### Custom timeouts
 ```javascript
-// Timeout de navigation (actuellement 30 secondes)
+// Navigation timeout (currently 30 seconds)
 await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
 
-// Timeout de capture (actuellement 30 secondes)
+// Screenshot timeout (currently 30 seconds)
 await page.screenshot({ path: filepath, fullPage: true, timeout: 30000 });
 ```
 
-## 🚨 Gestion des erreurs
+## 🚨 Error handling
 
-### Erreurs communes :
+### Common issues
 
-1. **Navigateur non trouvé** :
+1. **Browser not found**:
    ```
    Error: chromium is not supported
    ```
-   **Solution** : `npx playwright install chromium`
+   **Fix**: `npx playwright install chromium`
 
-2. **Timeout dépassé** :
+2. **Navigation timeout**:
    ```
    Error: Navigation timeout of 30000ms exceeded
    ```
-   **Solution** : Augmenter le timeout ou vérifier la connectivité
+   **Fix**: Increase the timeout or verify connectivity
 
-3. **Permissions d'écriture** :
+3. **Write permissions**:
    ```
    Error: EACCES: permission denied
    ```
-   **Solution** : Changer les permissions du dossier ou utiliser `--output` avec un chemin accessible
+   **Fix**: Adjust folder permissions or provide an accessible path with `--output`
 
-### Comportement en cas d'erreur :
-- **Récupération automatique** : Le script essaie automatiquement des stratégies alternatives (timeout étendu, condition d'attente simplifiée)
-- Le script continue avec les autres pages si une échoue
-- Les erreurs sont clairement affichées dans la console avec des suggestions
-- Le navigateur se ferme toujours proprement
+### Behavior on errors
+- **Automatic recovery**: Retries with alternate strategies (longer timeout, relaxed wait conditions)
+- Keeps processing remaining pages when one fails
+- Surfaces clear console messages with suggestions
+- Always closes the browser gracefully
 
-### Gestion intelligente des timeouts :
-Le script détecte automatiquement les problèmes de chargement et adapte sa stratégie :
-1. **Premier essai** : Condition `networkidle` avec timeout de 30 secondes
-2. **Récupération** : Condition `domcontentloaded` avec timeout étendu (45-60 secondes)
-3. **Échec** : Arrêt propre avec message d'erreur clair
+### Intelligent timeout management
+The script adapts when pages are slow to load:
+1. **Initial attempt**: `networkidle` wait with a 30-second timeout
+2. **Recovery**: `domcontentloaded` wait with an extended 45–60 second timeout
+3. **Failure**: Aborts with a clear error message
 
-## 📊 Sortie console
+## 📊 Console output
 
-Exemple de sortie réussie :
+Sample successful run:
 ```
 Starting screenshot automation...
 URL: https://example.com
@@ -278,23 +279,23 @@ Screenshots saved to: /Users/boubou/project/screenshots/capture_2025-09-04_09-03
 Closing browser...
 ```
 
-## 🔄 Intégration avec AI
+## 🔄 AI integration
 
-Le script peut être intégré facilement avec des outils AI :
+Easily plug the script into AI tooling:
 
 ```bash
-# Envoi automatique des captures vers un outil AI
-node screenshot-bot.js https://monsite.com --output ./captures &&
-./envoyer-vers-ai ./captures/*.png
+# Automatically forward captures to an AI workflow
+node screenshot-bot.js https://mysite.com --output ./captures &&
+./send-to-ai ./captures/*.png
 ```
 
-## 📝 Notes importantes
+## 📝 Important notes
 
-- Le script respecte les robots.txt par défaut
-- Il ne génère pas de trafic excessif (delai entre les captures)
-- Les captures sont en pleine résolution
-- Compatible avec les sites modernes (React, Vue, Angular...)
+- Respects `robots.txt` by default
+- Adds delays between captures to avoid excessive traffic
+- Produces full-resolution screenshots
+- Compatible with modern sites (React, Vue, Angular, ...)
 
 ---
 
-**Créé avec ❤️ pour l'automatisation de l'analyse web**
+**Built with ❤️ to automate web analysis**
