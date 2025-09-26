@@ -13,7 +13,6 @@ function generateTimestampedOutputDir(baseDir = './screenshots') {
   return path.join(baseDir, `capture_${timestamp}`);
 }
 
-// Parse command line arguments
 // Viewport presets for different device sizes
 const VIEWPORT_PRESETS = {
   'desktop': { width: 1920, height: 1080 },
@@ -26,24 +25,77 @@ const VIEWPORT_PRESETS = {
   'mobile-small': { width: 320, height: 568 }  // iPhone SE
 };
 
-function parseArgs() {
-  const args = process.argv.slice(2);
-  if (args.length === 0) {
-    console.error('Usage: node screenshot-bot.js <url> [--output <directory>] [--pages <number>] [--crawl] [--headless] [--viewport <preset>]');
-    console.error('Available viewport presets: ' + Object.keys(VIEWPORT_PRESETS).join(', '));
+function toBoolean(value, defaultValue) {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  const normalized = value.toString().trim().toLowerCase();
+  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) {
+    return false;
+  }
+  return defaultValue;
+}
+
+function parsePages(value, currentValue) {
+  if (value === undefined || value === null || value === '') {
+    return currentValue;
+  }
+
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed) || parsed < -1) {
+    console.error('--pages must be a positive number or -1 for unlimited');
     process.exit(1);
   }
 
-  const url = args[0];
-  let outputDir = null; // null means use timestamped directory
-  let pagesToCapture = 5;
-  let crawlMode = false;
-  let headless = true; // Changed to true by default (production mode)
-  let customOutputDir = false;
-  let viewportPreset = 'desktop'; // Default viewport
+  if (parsed > 50 && parsed !== -1) {
+    console.warn('⚠️ Warning: Capturing more than 50 pages may generate significant traffic and take a long time.');
+  }
 
-  for (let i = 1; i < args.length; i++) {
+  return parsed;
+}
+
+// Parse command line arguments and environment variables
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const env = process.env;
+
+  let url = env.TARGET_URL || null;
+  let outputDir = env.OUTPUT_DIR || null; // null means use timestamped directory
+  let pagesToCapture = parsePages(env.PAGES, 5);
+  const envCrawl = toBoolean(env.CRAWL, false);
+  let crawlMode = envCrawl;
+  let headless = toBoolean(env.HEADLESS, true);
+  const envDebug = toBoolean(env.DEBUG, false);
+  if (envDebug) {
+    headless = false;
+    console.log('🔍 Debug mode: Enabled via environment variable');
+  }
+
+  let customOutputDir = Boolean(outputDir);
+  let viewportPreset = env.VIEWPORT || 'desktop';
+
+  if (envCrawl) {
+    console.log('🕷️ Crawler mode activated via environment variable - will capture ALL pages found on the site');
+  }
+
+  let startIndex = 0;
+  if (args[startIndex] && !args[startIndex].startsWith('--')) {
+    url = args[startIndex];
+    startIndex += 1;
+  }
+
+  for (let i = startIndex; i < args.length; i++) {
     switch (args[i]) {
+      case '--url':
+        if (args[i + 1]) {
+          url = args[i + 1];
+          i++;
+        }
+        break;
       case '--output':
         if (args[i + 1]) {
           outputDir = args[i + 1];
@@ -53,14 +105,7 @@ function parseArgs() {
         break;
       case '--pages':
         if (args[i + 1]) {
-          pagesToCapture = parseInt(args[i + 1], 10);
-          if (isNaN(pagesToCapture) || (pagesToCapture < -1)) {
-            console.error('--pages must be a positive number or -1 for unlimited');
-            process.exit(1);
-          }
-          if (pagesToCapture > 50 && pagesToCapture !== -1) {
-            console.warn('⚠️ Warning: Capturing more than 50 pages may generate significant traffic and take a long time.');
-          }
+          pagesToCapture = parsePages(args[i + 1], pagesToCapture);
           i++;
         }
         break;
@@ -85,6 +130,18 @@ function parseArgs() {
         }
         break;
     }
+  }
+
+  if (!VIEWPORT_PRESETS[viewportPreset]) {
+    console.warn(`❔ Unknown viewport preset "${viewportPreset}". Falling back to "desktop".`);
+    viewportPreset = 'desktop';
+  }
+
+  if (!url) {
+    console.error('Usage: node screenshot-bot.js <url> [--output <directory>] [--pages <number>] [--crawl] [--headless] [--viewport <preset>]');
+    console.error('Environment variables: TARGET_URL, OUTPUT_DIR, PAGES, CRAWL, HEADLESS, DEBUG, VIEWPORT');
+    console.error('Available viewport presets: ' + Object.keys(VIEWPORT_PRESETS).join(', '));
+    process.exit(1);
   }
 
   return { 
@@ -368,7 +425,7 @@ async function findKeyPages(page, maxPages = 3) {
 
 // Spider/Crawler implementation for comprehensive site capture
 class WebSpider {
-  constructor(baseUrl, maxPages = 20, outputDir, page) {
+  constructor(baseUrl, maxPages = 20, outputDir, page, options = {}) {
     this.baseUrl = new URL(baseUrl).origin;
     // Handle unlimited pages (-1)
     this.maxPages = maxPages === -1 ? 1000 : maxPages;
@@ -378,6 +435,7 @@ class WebSpider {
     this.visitedUrls = new Set();
     this.queue = [];
     this.pageCounter = 0;
+    this.viewportName = options.viewportName || 'desktop';
   }
 
   isInternalLink(url) {
@@ -448,9 +506,11 @@ class WebSpider {
       }
 
       // Generate filename with viewport, timestamp and page number
-      const pageNum = pageNumber ? `_${pageNumber}` : '';
-      const viewportSuffix = `_${args.viewportName}`;
-      const filename = `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}${viewportSuffix}${pageNum}.png`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const pageIndex = this.pageCounter + 1;
+      const pageSuffix = `_${String(pageIndex).padStart(3, '0')}`;
+      const viewportSuffix = this.viewportName ? `_${this.viewportName}` : '';
+      const filename = `screenshot_${timestamp}${viewportSuffix}${pageSuffix}.png`;
 
       // Take screenshot
       await takeScreenshot(this.page, filename, this.outputDir);
@@ -494,7 +554,7 @@ class WebSpider {
 }
 
 async function main() {
-  const { url, outputDir: requestedOutputDir, pagesToCapture, crawlMode, headless, customOutputDir, viewport } = parseArgs();
+  const { url, outputDir: requestedOutputDir, pagesToCapture, crawlMode, headless, customOutputDir, viewport, viewportName } = parseArgs();
 
   // Determine final output directory
   const finalOutputDir = customOutputDir
@@ -510,7 +570,7 @@ async function main() {
     console.log(`Pages to capture: ${pagesToCapture}`);
     console.log(`Mode: ${crawlMode ? '🕷️ Full crawler mode' : '🎯 Smart discovery mode'}`);
     console.log(`Browser: ${headless ? '👻 Headless' : '👁️ Visible'}`);
-    console.log(`Viewport: ${viewport.name} (${viewport.width}x${viewport.height})`);
+    console.log(`Viewport: ${viewportName} (${viewport.width}x${viewport.height})`);
 
     // Ensure output directory exists
     await ensureOutputDir(finalOutputDir);
@@ -527,11 +587,11 @@ async function main() {
       height: viewport.height
     });
   
-    console.log(`🖥️  Using viewport: ${viewport.name} (${viewport.width}x${viewport.height})`);
+    console.log(`🖥️  Using viewport: ${viewportName} (${viewport.width}x${viewport.height})`);
 
     if (crawlMode) {
       // FULL CRAWLER MODE - Capture ALL pages
-      const spider = new WebSpider(url, pagesToCapture, finalOutputDir, page);
+      const spider = new WebSpider(url, pagesToCapture, finalOutputDir, page, { viewportName });
       await spider.crawl(url);
     } else {
       // SMART DISCOVERY MODE - Original behavior with enhanced error handling

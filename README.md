@@ -71,6 +71,20 @@ node screenshot-bot.js https://mysite.com --output ./captures --pages 10
 | `--headless` | Headless mode: hidden browser | No | true | Recommended in production |
 | `--viewport <preset>` | Viewport preset to apply | No | `desktop` | See script for available presets |
 
+### Environment variables
+
+Running inside containers or CI is easier with environment configuration. The script understands:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `TARGET_URL` | Target URL when no CLI argument is provided | `https://mysite.com` |
+| `OUTPUT_DIR` | Output directory for screenshots | `/data/screens` |
+| `PAGES` | Number of pages to capture (`-1` = unlimited) | `10` |
+| `CRAWL` | Enable crawler mode (`true`/`false`) | `true` |
+| `HEADLESS` | Force headless mode (`true`/`false`) | `true` |
+| `DEBUG` | Force visible browser (`true`/`false`) | `true` |
+| `VIEWPORT` | Viewport preset name | `mobile` |
+
 ### Automatic directory behavior
 
 The script creates timestamped folders on every run:
@@ -295,6 +309,17 @@ node screenshot-bot.js https://mysite.com --output ./captures &&
 - Adds delays between captures to avoid excessive traffic
 - Produces full-resolution screenshots
 - Compatible with modern sites (React, Vue, Angular, ...)
+
+## 🚢 Deploying with Docker / Coolify
+
+- A production-ready `Dockerfile` ships with the project. It uses the official Playwright image, installs dependencies, and runs `npm run capture`.
+- Provide configuration via environment variables (see above). At minimum, set `TARGET_URL` so the container knows what to crawl.
+- When building in Coolify:
+  1. Create a new *Application* and point it to this repository.
+  2. Choose the `Dockerfile` build type; no custom build command is required.
+  3. Define any environment variables (e.g., `TARGET_URL`, `PAGES`, `CRAWL`).
+  4. Optionally mount a persistent volume to `/app/screenshots` to keep captures across runs.
+  5. Trigger the deployment or convert the service into a scheduled Job for recurring captures.
 
 ---
 

@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "capture": "node screenshot-bot.js",
+    "start": "npm run capture",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
